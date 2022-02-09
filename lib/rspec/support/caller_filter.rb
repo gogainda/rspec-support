@@ -18,7 +18,17 @@ module RSpec
     ADDITIONAL_TOP_LEVEL_FILES = %w[ autorun ]
 
     LIB_REGEX = %r{/lib/rspec/(#{(RSPEC_LIBS + ADDITIONAL_TOP_LEVEL_FILES).join('|')})(\.rb|/)}
-
+    
+    LANGUAGE_SPECIFIC = []
+    LANGUAGE_SPECIFIC <<  "<internal:" if RUBY_ENGINE == 'truffleruby'
+    
+    # rubygems/core_ext/kernel_require.rb isn't actually part of rspec (obviously) but we want
+    # it ignored when we are looking for the first meaningful line of the backtrace outside
+    # of RSpec. It can show up in the backtrace as the immediate first caller
+    # when `CallerFilter.first_non_rspec_line` is called from the top level of a required
+    # file, but it depends on if rubygems is loaded or not. We don't want to have to deal
+    # with this complexity in our `RSpec.deprecate` calls, so we ignore it here.
+    IGNORE_REGEX = Regexp.union(LIB_REGEX, "rubygems/core_ext/kernel_require.rb", Regexp.union(LANGUAGE_SPECIFIC))
     # rubygems/core_ext/kernel_require.rb isn't actually part of rspec (obviously) but we want
     # it ignored when we are looking for the first meaningful line of the backtrace outside
     # of RSpec. It can show up in the backtrace as the immediate first caller
